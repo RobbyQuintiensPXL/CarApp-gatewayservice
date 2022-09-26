@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    consul:
+      discovery:
+        instance-id: "${spring.application.name}:${random.int[1,99999]}"
+        register: false
+        register-health-check: false
+        tags: api-gateway
+      host: localhost
+      port: 8500
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: car-service
+          uri: lb://car-service
+          predicates:
+            - Path=/car/**
+          filters:
+            - RewritePath=/car/(?<path>.*), /$\{path}
+            - RemoveRequestHeader= Cookie,Set-Cookie
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/JEvents
+
+
+  main:
+    allow-bean-definition-overriding: true
+
+auth:
+  audience: jevents
+jwk-set-uri: http://localhost:8080/realms/JEvents/protocol/openid-connect/certs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+      cors:
+        allowed-origins: '*'
+        allowed-headers: '*'
+        allowed-methods: '*'
+
+server:
+  port: 9080
